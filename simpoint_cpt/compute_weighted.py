@@ -17,7 +17,7 @@ args = []
 clock_rate = 3 * 10**9
 reftime_js = {}
 
-def proc_input(wl_df: pd.DataFrame, js: dict, workload: str):
+def proc_input(wl_df: pd.DataFrame, js: dict, workload: str, decomposed_path: str):
     # we implement the weighted metrics computation with the following formula:
     # weight = vec_weight matmul matrix_perf
     # (N, 1) = (1, W) matmul (W, N)
@@ -73,14 +73,14 @@ def proc_input(wl_df: pd.DataFrame, js: dict, workload: str):
     decomposed = pd.DataFrame(wl_df.values * vec_weight.values, columns=wl_df.columns, index=wl_df.index)
     print(decomposed)  # decomposed
     decomposed['weight'] = vec_weight.values
-    decomposed.to_csv(osp.join('results', f'{workload}_decomposed.csv'))
+    decomposed.to_csv(osp.join(decomposed_path, f'{workload}_decomposed.csv'))
     weight_metrics_df = pd.DataFrame(weight_metrics, columns=wl_df.columns)
     # We have to process coverage here to avoid apply weight on top of weight
     weight_metrics_df['coverage'] = coverage
     return weight_metrics_df.values, weight_metrics_df.columns
 
 
-def proc_bmk(bmk_df: pd.DataFrame, js: dict, bmk: str):
+def proc_bmk(bmk_df: pd.DataFrame, js: dict, bmk: str, decomposed_path: str):
     # Similar to per-input proc, we view the instruction count as the weight
     # and compute weighted metrics with matrix multiplication
     workloads = bmk_df['workload'].unique()
@@ -88,7 +88,7 @@ def proc_bmk(bmk_df: pd.DataFrame, js: dict, bmk: str):
     time = 0
     print('Processing bmk', bmk)
     for wl in workloads:
-        metrics, cols = proc_input(bmk_df[bmk_df['workload'] == wl], js, wl)
+        metrics, cols = proc_input(bmk_df[bmk_df['workload'] == wl], js, wl, decomposed_path)
         if args.score:
             time += metrics[0][np.where(cols.values == 'time')[0][0]]
         metric_list.append(metrics)
@@ -133,9 +133,9 @@ def compute_weighted_metrics(csv_path: str, js_path: str, out_csv: str, args):
         n_wl = len(workloads)
         print(workloads)
         if n_wl == 1:
-            metrics, cols = proc_input(df_bmk, js, workloads[0])
+            metrics, cols = proc_input(df_bmk, js, workloads[0], args.decomposed_path)
         else:
-            metrics, cols = proc_bmk(df_bmk, js, bmk)
+            metrics, cols = proc_bmk(df_bmk, js, bmk, args.decomposed_path)
         weighted[bmk] = metrics[0]
     weighted_df = pd.DataFrame.from_dict(weighted, orient='index', columns=cols)
 
@@ -162,6 +162,7 @@ def compute_weighted_metrics(csv_path: str, js_path: str, out_csv: str, args):
         weighted_df = weighted_df.sort_index()
     print(weighted_df)
     if out_csv is not None:
+        # save all the weight
         weighted_df.to_csv(out_csv)
     if args.score:
         score = {}
@@ -240,6 +241,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--clock', action='store', required=False, default=3, help='simulation clock rate(GHz)')
     parser.add_argument('-v', '--spec-version', action='store', required=False, default='06',
                         help='spec version, default is 06')
+    parser.add_argument('-d', '--decomposed-path', action='store', required=False, help='the save to save decomposed workload')
     args = parser.parse_args()
     clock_rate = float(args.clock) * 10**9
     if args.score:

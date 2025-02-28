@@ -68,6 +68,13 @@ pf_targets = {
     'l2_pf_useful': 'system\.l2\.prefetcher\.(pfUseful) ',
 }
 
+ideal_model_target = {
+    'idealValuePredictorPredicted': '(?:cpus?|switch_cpus_1)\.idealmodel\.idealValuePredictorPredicted',
+    'idealValuePredictorSupported': '(?:cpus?|switch_cpus_1)\.idealmodel\.idealValuePredictorSupported',
+    'idealValuePredictorCoverage': '(?:cpus?|switch_cpus_1)\.idealmodel\.idealValuePredictorCoverage',
+    'idealValuePredictorIterModeCount': '(?:cpus?|switch_cpus_1)\.idealmodel\.idealValuePredictorIterModeCount',
+}
+
 topdown_targets = {}
 
 LievenStalls = [

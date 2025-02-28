@@ -140,6 +140,10 @@ def main():
             help='evaled stats',
             )
 
+    parser.add_argument('--im', action='store_true',
+                        help='print ideal model stats'
+                        )
+
     opt = parser.parse_args()
 
     add_nanhu_multicore_ipc_targets(opt.num_cores)
@@ -230,6 +234,8 @@ def main():
                     targets = {**warmup_targets, **targets}
                 if opt.topdown:
                     targets = {**topdown_targets, **targets}
+                if opt.im:
+                    targets = {**ideal_model_target, **targets}
 
                 add_eval_targets(opt, targets)
 
@@ -272,6 +278,7 @@ def main():
     jobs = [Process(target=extract_and_post_process, args=(all_bmk_dict, workload, path)) for workload, path in paths]
     _ = [p.start() for p in jobs]
     _ = [p.join() for p in jobs]
+    print("all bmk is :")
     print(all_bmk_dict)
 
     df = pd.DataFrame.from_dict(all_bmk_dict, orient='index')
